@@ -189,3 +189,47 @@ exports.changePassword = async (req, res) => {
     }
 
 };
+
+
+
+exports.deleteAccount = (req, res) => {
+
+    try {
+
+        const userId = req.user.id;   // coming from JWT middleware
+
+        authModel.deleteUser(userId, (err, result) => {
+
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: "Database error"
+                });
+            }
+
+            const response = result[0][0];
+
+            if (response.status === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: response.message
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: "Account deleted successfully"
+            });
+
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+
+};

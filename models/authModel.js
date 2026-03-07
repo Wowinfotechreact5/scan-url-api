@@ -24,3 +24,21 @@ exports.updatePassword = (email, password, callback) => {
         callback
     );
 };
+
+exports.deleteUser = (userId, callback) => {
+    db.query(
+        "CALL sp_delete_user(?)",
+        [userId],
+        callback
+    );
+};
+
+exports.deleteUser = (userId, callback) => {
+
+    db.query(
+        "CALL sp_delete_user(?)",
+        [userId],
+        callback
+    );
+
+};
