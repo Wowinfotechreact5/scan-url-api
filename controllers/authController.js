@@ -233,3 +233,52 @@ exports.deleteAccount = (req, res) => {
     }
 
 };
+exports.changeEmail = (req, res) => {
+
+    try {
+
+        const userId = req.user.id;
+        const { newEmail } = req.body;
+
+        if (!newEmail) {
+            return res.status(400).json({
+                success: false,
+                message: "New email is required"
+            });
+        }
+
+        authModel.changeEmail(userId, newEmail, (err, result) => {
+
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: "Database error"
+                });
+            }
+
+            const response = result[0][0];
+
+            if (response.status === 0) {
+                return res.status(409).json({
+                    success: false,
+                    message: response.message
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: response.message
+            });
+
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+
+};

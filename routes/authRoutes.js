@@ -11,4 +11,9 @@ router.post("/login", authController.login);
 // ye sb protected he 
 router.post("/change-password", verifyToken, authController.changePassword);
 router.delete("/delete-account", verifyToken, authController.deleteAccount);
+router.put(
+    "/change-email",
+    verifyToken,
+    authController.changeEmail
+);
 module.exports = router;

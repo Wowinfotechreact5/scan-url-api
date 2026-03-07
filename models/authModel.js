@@ -42,3 +42,13 @@ exports.deleteUser = (userId, callback) => {
     );
 
 };
+
+exports.changeEmail = (userId, newEmail, callback) => {
+
+    db.query(
+        "CALL sp_change_email(?,?)",
+        [userId, newEmail],
+        callback
+    );
+
+};
