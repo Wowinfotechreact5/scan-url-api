@@ -59,12 +59,23 @@ exports.getApiKeys = (req,res)=>{
 
 exports.changeName = (req,res)=>{
 
+    const userId = req.user.id;
     const { id, name } = req.body;
 
-    apiKeyModel.updateName(id,name,(err,result)=>{
+    if(!name){
+        return res.status(400).json({
+            success:false,
+            message:"API key name required"
+        });
+    }
+
+    apiKeyModel.updateName(userId,id,name,(err,result)=>{
 
         if(err){
-            return res.status(500).json({success:false});
+            return res.status(500).json({
+                success:false,
+                message:"Database error"
+            });
         }
 
         res.json({
@@ -76,14 +87,14 @@ exports.changeName = (req,res)=>{
 
 };
 
-
 exports.regenerateKey = (req,res)=>{
 
+    const userId = req.user.id;
     const { id } = req.body;
 
     const newKey = generateApiKey();
 
-    apiKeyModel.regenerateKey(id,newKey,(err,result)=>{
+    apiKeyModel.regenerateKey(userId,id,newKey,(err,result)=>{
 
         if(err){
             return res.status(500).json({success:false});
@@ -97,12 +108,12 @@ exports.regenerateKey = (req,res)=>{
     });
 
 };
-
 exports.deleteKey = (req,res)=>{
 
+    const userId = req.user.id;
     const { id } = req.body;
 
-    apiKeyModel.deleteKey(id,(err,result)=>{
+    apiKeyModel.deleteKey(userId,id,(err,result)=>{
 
         if(err){
             return res.status(500).json({success:false});

@@ -10,33 +10,39 @@ exports.createApiKey = (userId, name, apiKey, callback) => {
 };
 
 exports.getApiKeys = (userId, callback) => {
+
     db.query(
         "CALL sp_get_api_keys(?)",
         [userId],
         callback
     );
-};
 
-exports.updateName = (id, name, callback) => {
+};
+exports.updateName = (userId, id, name, callback) => {
+
     db.query(
-        "CALL sp_update_api_key_name(?,?)",
-        [id, name],
+        "CALL sp_update_api_key_name(?,?,?)",
+        [userId, id, name],
         callback
     );
-};
 
-exports.regenerateKey = (id, newKey, callback) => {
+};
+exports.regenerateKey = (userId, id, newKey, callback) => {
+
     db.query(
-        "CALL sp_regenerate_api_key(?,?)",
-        [id, newKey],
+        "CALL sp_regenerate_api_key(?,?,?)",
+        [userId, id, newKey],
         callback
     );
+
 };
 
-exports.deleteKey = (id, callback) => {
+exports.deleteKey = (userId, id, callback) => {
+
     db.query(
-        "CALL sp_delete_api_key(?)",
-        [id],
+        "CALL sp_delete_api_key(?,?)",
+        [userId, id],
         callback
     );
+
 };
