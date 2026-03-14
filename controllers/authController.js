@@ -1,7 +1,9 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const authModel = require("../models/authModel");
-
+const { v4: uuidv4 } = require("uuid");
+const emailService = require("../services/emailService");
+const db = require("../db");
 exports.register = async (req, res) => {
 
     try {
@@ -17,17 +19,21 @@ exports.register = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // ✅ generate verification token
+        const token = uuidv4();
+
         authModel.registerUser(
             name,
             email,
             phone,
             hashedPassword,
-            (err, result) => {
+            token,
+            async (err, result) => {
 
                 if (err) {
                     return res.status(500).json({
                         success: false,
-                        message: "Database error"
+                        message: err.message
                     });
                 }
 
@@ -40,10 +46,18 @@ exports.register = async (req, res) => {
                     });
                 }
 
-                res.status(201).json({
-                    success: true,
-                    message: response.message
-                });
+                // verification link
+               const verifyLink = `http://localhost:5000/api/auth/verify-email?token=${token}`;
+
+console.log("Verification Link:", verifyLink);
+
+// send email
+await emailService.sendVerificationEmail(email, token);
+
+res.status(201).json({
+    success: true,
+    message: "Registration successful. Verification email sent."
+});
 
             }
         );
@@ -58,7 +72,6 @@ exports.register = async (req, res) => {
     }
 
 };
-
 
 exports.login = (req, res) => {
 
@@ -280,5 +293,29 @@ exports.changeEmail = (req, res) => {
         });
 
     }
+
+};
+
+
+exports.verifyEmail = (req, res) => {
+
+    const { token } = req.query;
+
+    db.query(
+        "UPDATE tb_users SET is_verified = 1, verification_token = NULL WHERE verification_token = ?",
+        [token],
+        (err, result) => {
+
+            if (result.affectedRows === 0) {
+                return res.status(400).send("Invalid or expired token");
+            }
+
+            res.send(`
+                <h2>Email verified successfully</h2>
+                <p>You can now login.</p>
+            `);
+
+        }
+    );
 
 };

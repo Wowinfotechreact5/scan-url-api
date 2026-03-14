@@ -1,12 +1,14 @@
 
 const db = require("../db.js");
 
-exports.registerUser = (name, email, phone, password, callback) => {
+exports.registerUser = (name, email, phone, password, token, callback) => {
+
     db.query(
-        "CALL sp_register_user(?,?,?,?)",
-        [name, email, phone, password],
+        "CALL sp_register_user(?,?,?,?,?)",
+        [name, email, phone, password, token],
         callback
     );
+
 };
 
 exports.getUserByEmail = (email, callback) => {

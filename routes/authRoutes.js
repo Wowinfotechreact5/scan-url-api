@@ -1,6 +1,7 @@
 const express = require("express");
 
 const router = express.Router();
+const nodemailer = require("nodemailer");
 
 const authController = require("../controllers/authController");
 const { verifyToken } = require("../middleware/middleware");
@@ -16,4 +17,6 @@ router.put(
     verifyToken,
     authController.changeEmail
 );
+
+router.get("/verify-email", authController.verifyEmail);
 module.exports = router;
