@@ -46,8 +46,7 @@ exports.register = async (req, res) => {
                     });
                 }
 
-                // verification link
-            //    const verifyLink = `http://localhost:5000/api/auth/verify-email?token=${token}`;
+           
   const verifyLink = `${process.env.BASE_URL}/api/auth/verify-email?token=${token}`;
 console.log("Verification Link:", verifyLink);
 
