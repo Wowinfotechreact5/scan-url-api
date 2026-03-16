@@ -1,22 +1,21 @@
 const nodemailer = require("nodemailer");
 
-
-
 const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
+    host: "smtp-relay.brevo.com",
     port: 587,
-    secure: false, // true only for 465
+    secure: false,
     auth: {
-        user: "wowinfotechdeveloper@gmail.com",
-        pass: "jwla fzsp xapw uvff"
+        user: "a4ec23001@smtp-brevo.com",
+        pass: "bskPF8ROS26Kk8w"
     }
 });
+
 exports.sendVerificationEmail = async (email, token) => {
 
     const verifyLink = `${process.env.BASE_URL}/api/auth/verify-email?token=${token}`;
+
     await transporter.sendMail({
-            from: `"Auth System" <${process.env.SMTP_USER}>`,
-       
+        from: `"ScanURL" <no-reply@scanurl.ai>`,
         to: email,
         subject: "Verify your account",
         html: `
