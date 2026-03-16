@@ -12,9 +12,8 @@ const transporter = nodemailer.createTransport({
 
 exports.sendVerificationEmail = async (email, token) => {
 
-    const verifyLink = `${process.env.Admin_BASE_URL}/api/auth/verify-email?token=${token}`;
-
-
+    const verifyLink = `${process.env.Admin_BASE_URL}/login?verify-email?token=${token}`;
+// https://scan-url-user-dashboard.vercel.app/api/auth/verify-email?token=f190e216-325f-49d3-93c9-b05a3830898f
     await transporter.sendMail({
         from: `"ScanURL" <no-reply@scanurl.ai>`,
         to: email,
@@ -32,8 +31,7 @@ exports.sendVerificationEmail = async (email, token) => {
 exports.sendResetPasswordEmail = async (email, token) => {
 
     const resetLink = `${process.env.Admin_BASE_URL}/reset-password?token=${token}`;
-console.log(resetLink,'3sssssssssss');
-
+log
     await transporter.sendMail({
         from: `"ScanURL" <no-reply@scanurl.ai>`,
         to: email,
