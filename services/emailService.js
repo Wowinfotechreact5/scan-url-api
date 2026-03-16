@@ -13,12 +13,10 @@ const transporter = nodemailer.createTransport({
 });
 exports.sendVerificationEmail = async (email, token) => {
 
-//     const verifyLink = `${process.env.BASE_URL}/api/auth/verify-email?token=${token}`;
     const verifyLink = `${process.env.BASE_URL}/api/auth/verify-email?token=${token}`;
-// const verifyLink = `http://localhost:5000/api/auth/verify-email?token=${token}`;
     await transporter.sendMail({
             from: `"Auth System" <${process.env.SMTP_USER}>`,
-        //   from: "wowinfotechdeveloper@gmail.com",
+       
         to: email,
         subject: "Verify your account",
         html: `

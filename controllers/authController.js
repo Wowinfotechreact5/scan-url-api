@@ -102,6 +102,14 @@ exports.login = (req, res) => {
             });
         }
 
+        // 🚨 NEW CHECK
+        if (response.is_verified === 0) {
+            return res.status(403).json({
+                success: false,
+                message: "Please verify your email before login"
+            });
+        }
+
         const match = await bcrypt.compare(password, response.password);
 
         if (!match) {
@@ -301,21 +309,26 @@ exports.verifyEmail = (req, res) => {
 
     const { token } = req.query;
 
+    if (!token) {
+        return res.redirect("https://scan-url-user-dashboard.vercel.app/login?status=invalid");
+    }
+
     db.query(
         "UPDATE tb_users SET is_verified = 1, verification_token = NULL WHERE verification_token = ?",
         [token],
         (err, result) => {
 
-            if (result.affectedRows === 0) {
-                return res.status(400).send("Invalid or expired token");
+            if (err) {
+                return res.redirect("https://scan-url-user-dashboard.vercel.app/login?status=error");
             }
 
-            res.send(`
-                <h2>Email verified successfully</h2>
-                <p>You can now login.</p>
-            `);
+            if (result.affectedRows === 0) {
+                return res.redirect("https://scan-url-user-dashboard.vercel.app/login?status=invalid");
+            }
+
+            // success redirect
+            res.redirect("https://scan-url-user-dashboard.vercel.app/login?verified=true");
 
         }
     );
-
 };
