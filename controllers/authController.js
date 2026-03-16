@@ -47,8 +47,8 @@ exports.register = async (req, res) => {
                 }
 
                 // verification link
-               const verifyLink = `http://localhost:5000/api/auth/verify-email?token=${token}`;
-
+            //    const verifyLink = `http://localhost:5000/api/auth/verify-email?token=${token}`;
+  const verifyLink = `${process.env.BASE_URL}/api/auth/verify-email?token=${token}`;
 console.log("Verification Link:", verifyLink);
 
 // send email
@@ -113,7 +113,7 @@ exports.login = (req, res) => {
         const match = await bcrypt.compare(password, response.password);
 
         if (!match) {
-            return res.status(401).json({
+            return res.status(400).json({
                 success: false,
                 message: "Invalid password"
             });
@@ -332,4 +332,119 @@ exports.verifyEmail = (req, res) => {
 
         }
     );
+};
+
+
+exports.forgotPassword = async (req, res) => {
+
+    try {
+
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email required"
+            });
+        }
+
+        authModel.getUserByEmail(email, async (err, result) => {
+
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: "Database error"
+                });
+            }
+
+            const user = result[0][0];
+
+            if (!user || user.status === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            const token = uuidv4();
+
+            authModel.saveResetToken(email, token, async (err) => {
+
+                if (err) {
+                    return res.status(500).json({
+                        success: false,
+                        message: "Database error"
+                    });
+                }
+
+                await emailService.sendResetPasswordEmail(email, token);
+
+                res.status(200).json({
+                    success: true,
+                    message: "Password reset email sent"
+                });
+
+            });
+
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+
+};
+
+
+exports.resetPassword = async (req, res) => {
+
+    try {
+
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Token and password required"
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        authModel.resetPassword(token, hashedPassword, (err, result) => {
+
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: "Database error"
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid or expired token"
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: "Password reset successful"
+            });
+
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+
 };

@@ -54,3 +54,25 @@ exports.changeEmail = (userId, newEmail, callback) => {
     );
 
 };
+
+exports.saveResetToken = (email, token, callback) => {
+
+    db.query(
+        "UPDATE tb_users SET reset_token = ?, reset_token_expiry = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE email = ?",
+        [token, email],
+        callback
+    );
+
+};
+
+exports.resetPassword = (token, password, callback) => {
+
+    db.query(
+        `UPDATE tb_users 
+         SET password = ?, reset_token = NULL, reset_token_expiry = NULL
+         WHERE reset_token = ? AND reset_token_expiry > NOW()`,
+        [password, token],
+        callback
+    );
+
+};

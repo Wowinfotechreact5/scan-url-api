@@ -26,3 +26,21 @@ exports.sendVerificationEmail = async (email, token) => {
     });
 
 };
+
+
+exports.sendResetPasswordEmail = async (email, token) => {
+
+    const resetLink = `${process.env.BASE_URL}/reset-password?token=${token}`;
+
+    await transporter.sendMail({
+        from: `"ScanURL" <no-reply@scanurl.ai>`,
+        to: email,
+        subject: "Reset your password",
+        html: `
+            <h3>Password Reset</h3>
+            <p>Click below to reset your password</p>
+            <a href="${resetLink}">Reset Password</a>
+        `
+    });
+
+};
