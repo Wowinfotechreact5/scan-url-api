@@ -12,8 +12,12 @@ const transporter = nodemailer.createTransport({
 
 exports.sendVerificationEmail = async (email, token) => {
 
-    const verifyLink = `${process.env.BASE_URL}login?verify-email?token=${token}`;
+    // const verifyLink = `${process.env.BASE_URL}/api/auth/verify-email?token=${token}`;
+    // const verifyLink = `http://localhost:5000/api/auth/verify-email?token=${token}`;
+    const verifyLink = `https://api.scan-url.wowinfosolutions.com/api/auth/verify-email?token=${token}`;
+
     console.log("Verification Link:", verifyLink);
+
     await transporter.sendMail({
         from: `"ScanURL" <no-reply@scanurl.ai>`,
         to: email,
@@ -26,7 +30,6 @@ exports.sendVerificationEmail = async (email, token) => {
     });
 
 };
-
 
 exports.sendResetPasswordEmail = async (email, token) => {
 

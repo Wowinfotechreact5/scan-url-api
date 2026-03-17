@@ -137,7 +137,33 @@ exports.login = (req, res) => {
     });
 
 };
+exports.verifyEmail = (req, res) => {
 
+    const { token } = req.query;
+
+    if (!token) {
+        return res.redirect("https://scan-url-user-dashboard.vercel.app/login?status=invalid");
+    }
+
+    db.query(
+        "UPDATE tb_users SET is_verified = 1, verification_token = NULL WHERE verification_token = ?",
+        [token],
+        (err, result) => {
+
+            if (err) {
+                return res.redirect("https://scan-url-user-dashboard.vercel.app/login?status=error");
+            }
+
+            if (result.affectedRows === 0) {
+                return res.redirect("https://scan-url-user-dashboard.vercel.app/login?status=invalid");
+            }
+
+            // success redirect
+            res.redirect("https://scan-url-user-dashboard.vercel.app/login?verified=true");
+
+        }
+    );
+};
 
 exports.changePassword = async (req, res) => {
 
@@ -305,33 +331,7 @@ exports.changeEmail = (req, res) => {
 };
 
 
-exports.verifyEmail = (req, res) => {
 
-    const { token } = req.query;
-
-    if (!token) {
-        return res.redirect("https://scan-url-user-dashboard.vercel.app/login?status=invalid");
-    }
-
-    db.query(
-        "UPDATE tb_users SET is_verified = 1, verification_token = NULL WHERE verification_token = ?",
-        [token],
-        (err, result) => {
-
-            if (err) {
-                return res.redirect("https://scan-url-user-dashboard.vercel.app/login?status=error");
-            }
-
-            if (result.affectedRows === 0) {
-                return res.redirect("https://scan-url-user-dashboard.vercel.app/login?status=invalid");
-            }
-
-            // success redirect
-            res.redirect("https://scan-url-user-dashboard.vercel.app/login?verified=true");
-
-        }
-    );
-};
 
 
 exports.forgotPassword = async (req, res) => {
