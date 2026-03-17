@@ -280,7 +280,7 @@ exports.deleteAccount = (req, res) => {
     }
 
 };
-exports.changeEmail = (req, res) => {
+exports.changeEmail = async (req, res) => {
 
     try {
 
@@ -294,7 +294,10 @@ exports.changeEmail = (req, res) => {
             });
         }
 
-        authModel.changeEmail(userId, newEmail, (err, result) => {
+        // ✅ generate new token
+        const token = uuidv4();
+
+        authModel.changeEmail(userId, newEmail, token, async (err, result) => {
 
             if (err) {
                 return res.status(500).json({
@@ -312,9 +315,12 @@ exports.changeEmail = (req, res) => {
                 });
             }
 
+            // ✅ send verification mail to new email
+            await emailService.sendVerificationEmail(newEmail, token);
+
             res.status(200).json({
                 success: true,
-                message: response.message
+                message: "Email changed. Please verify your new email."
             });
 
         });
@@ -329,7 +335,6 @@ exports.changeEmail = (req, res) => {
     }
 
 };
-
 
 
 

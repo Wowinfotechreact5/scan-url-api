@@ -45,14 +45,12 @@ exports.deleteUser = (userId, callback) => {
 
 };
 
-exports.changeEmail = (userId, newEmail, callback) => {
-
+exports.changeEmail = (userId, newEmail, token, callback) => {
     db.query(
-        "CALL sp_change_email(?,?)",
-        [userId, newEmail],
+        "CALL sp_change_email(?,?,?)",
+        [userId, newEmail, token],
         callback
     );
-
 };
 
 exports.saveResetToken = (email, token, callback) => {
