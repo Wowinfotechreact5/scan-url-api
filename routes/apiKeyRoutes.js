@@ -9,6 +9,6 @@ router.get("/list", verifyToken, apiKeyController.getApiKeys);
 router.put("/change-name", verifyToken, apiKeyController.changeName);
 router.put("/regenerate", verifyToken, apiKeyController.regenerateKey);
 router.delete("/delete", verifyToken, apiKeyController.deleteKey);
-
-console.log(apiKeyController,'sssss3');
+router.put("/set-credit", verifyToken, apiKeyController.setCreditLimit);
+router.post("/v1/url-scan", apiKeyController.scanUrl);
 module.exports = router;

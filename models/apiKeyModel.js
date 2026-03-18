@@ -46,3 +46,19 @@ exports.deleteKey = (userId, id, callback) => {
     );
 
 };
+
+exports.setCreditLimit = (userId, id, credit, callback) => {
+    db.query(
+        "CALL sp_set_credit_limit(?,?,?)",
+        [userId, id, credit],
+        callback
+    );
+};
+
+exports.consumeCredit = (apiKey, callback) => {
+    db.query(
+        "CALL sp_consume_credit(?)",
+        [apiKey],
+        callback
+    );
+};
