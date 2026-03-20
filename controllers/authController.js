@@ -4,6 +4,15 @@ const authModel = require("../models/authModel");
 const { v4: uuidv4 } = require("uuid");
 const emailService = require("../services/emailService");
 const db = require("../db");
+
+const now = new Date();
+
+// next midnight
+const tomorrow = new Date();
+tomorrow.setHours(24, 0, 0, 0);
+
+// difference in seconds
+const expiresIn = Math.floor((tomorrow - now) / 1000);
 exports.register = async (req, res) => {
 
     try {
@@ -118,11 +127,16 @@ exports.login = (req, res) => {
             });
         }
 
+        // const token = jwt.sign(
+        //     { id: response.id, email: response.email },
+        //     process.env.JWT_SECRET,
+        //     { expiresIn: "1d" }
+        // );
         const token = jwt.sign(
-            { id: response.id, email: response.email },
-            process.env.JWT_SECRET,
-            { expiresIn: "1d" }
-        );
+  { id: response.id, email: response.email },
+  process.env.JWT_SECRET,
+  { expiresIn } // dynamic expiry
+);
 
         res.status(200).json({
             success: true,
