@@ -6,6 +6,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const apiKeyRoutes = require("./routes/apiKeyRoutes");
 const apiKeyIpRoutes = require("./routes/apiKeyIpRoutes");
+const activityRoutes = require("./routes/activityRoutes");
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/apikey", apiKeyRoutes);
 
 app.use("/api/apikey-ip", apiKeyIpRoutes);
+app.use("/api", activityRoutes);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

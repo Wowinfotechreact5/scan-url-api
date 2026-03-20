@@ -4,7 +4,7 @@ const authModel = require("../models/authModel");
 const { v4: uuidv4 } = require("uuid");
 const emailService = require("../services/emailService");
 const db = require("../db");
-
+const activityModel = require("../models/ActivityLogModel");
 const now = new Date();
 
 // next midnight
@@ -13,6 +13,14 @@ tomorrow.setHours(24, 0, 0, 0);
 
 // difference in seconds
 const expiresIn = Math.floor((tomorrow - now) / 1000);
+const getClientIp = (req) => {
+    return (
+        req.headers["x-forwarded-for"]?.split(",")[0] ||
+        req.socket?.remoteAddress ||
+        req.ip ||
+        ""
+    );
+};
 exports.register = async (req, res) => {
 
     try {
@@ -82,8 +90,8 @@ res.status(201).json({
 };
 
 exports.login = (req, res) => {
-
     const { email, password } = req.body;
+    const ip = getClientIp(req);
 
     if (!email || !password) {
         return res.status(400).json({
@@ -103,15 +111,34 @@ exports.login = (req, res) => {
 
         const response = result[0][0];
 
+        // ❌ USER NOT FOUND
         if (response.status === 0) {
+
+            activityModel.addActivityLog({
+                user_id: null,
+                email,
+                ip,
+                event: "LOGIN_FAILED",
+                message: "User not found"
+            }, () => {});
+
             return res.status(404).json({
                 success: false,
                 message: "User not found"
             });
         }
 
-        // 🚨 NEW CHECK
+        // ❌ NOT VERIFIED
         if (response.is_verified === 0) {
+
+            activityModel.addActivityLog({
+                user_id: response.id,
+                email,
+                ip,
+                event: "LOGIN_FAILED",
+                message: "Email not verified"
+            }, () => {});
+
             return res.status(403).json({
                 success: false,
                 message: "Please verify your email before login"
@@ -120,23 +147,37 @@ exports.login = (req, res) => {
 
         const match = await bcrypt.compare(password, response.password);
 
+        // ❌ WRONG PASSWORD
         if (!match) {
+
+            activityModel.addActivityLog({
+                user_id: response.id,
+                email,
+                ip,
+                event: "LOGIN_FAILED",
+                message: "Invalid password"
+            }, () => {});
+
             return res.status(400).json({
                 success: false,
                 message: "Invalid password"
             });
         }
 
-        // const token = jwt.sign(
-        //     { id: response.id, email: response.email },
-        //     process.env.JWT_SECRET,
-        //     { expiresIn: "1d" }
-        // );
+        // ✅ SUCCESS LOGIN
         const token = jwt.sign(
-  { id: response.id, email: response.email },
-  process.env.JWT_SECRET,
-  { expiresIn } // dynamic expiry
-);
+            { id: response.id, email: response.email },
+            process.env.JWT_SECRET,
+            { expiresIn }
+        );
+
+        activityModel.addActivityLog({
+            user_id: response.id,
+            email,
+            ip,
+            event: "LOGIN_SUCCESS",
+            message: "Login successful"
+        }, () => {});
 
         res.status(200).json({
             success: true,
@@ -149,7 +190,6 @@ exports.login = (req, res) => {
         });
 
     });
-
 };
 exports.verifyEmail = (req, res) => {
 
