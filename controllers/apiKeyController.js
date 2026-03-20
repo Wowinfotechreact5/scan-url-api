@@ -1,6 +1,7 @@
 const apiKeyModel = require("../models/apiKeyModel");
 const crypto = require("crypto");
-
+const activityModel = require("../models/ActivityLogModel");
+const { logActivity } = require("../utils/activityLogger");
 const generateApiKey = () => {
     return crypto.randomBytes(16).toString("hex");
 };
@@ -19,21 +20,29 @@ exports.createApiKey = (req, res) => {
 
     const apiKey = generateApiKey();
 
-    apiKeyModel.createApiKey(userId,name,apiKey,(err,result)=>{
+   apiKeyModel.createApiKey(userId, name, apiKey, (err, result) => {
 
-        if(err){
-            return res.status(500).json({
-                success:false,
-                message:"Database error"
-            });
-        }
-
-        res.status(201).json({
-            success:true,
-            apiKey
+    if (err) {
+        return res.status(500).json({
+            success: false,
+            message: "Database error"
         });
+    }
 
+    // create LOG
+    logActivity({
+        user_id: userId,
+        email: req.user.email,
+        ip: req.ip,
+        event: "API_KEY_CREATE",
+        message: `API key created (${name})`
     });
+
+    res.status(201).json({
+        success: true,
+        apiKey
+    });
+});
 
 };
 exports.getApiKeys = (req,res)=>{
@@ -77,7 +86,13 @@ exports.changeName = (req,res)=>{
                 message:"Database error"
             });
         }
-
+logActivity({
+    user_id: userId,
+    email: req.user.email,
+    ip: req.ip,
+    event: "API_KEY_UPDATE",
+    message: `API key name updated (${name})`
+});
         res.json({
             success:true,
             message:"Name updated"
@@ -99,7 +114,13 @@ exports.regenerateKey = (req,res)=>{
         if(err){
             return res.status(500).json({success:false});
         }
-
+logActivity({
+    user_id: userId,
+    email: req.user.email,
+    ip: req.ip,
+    event: "API_KEY_REGENERATE",
+    message: `API key regenerated (ID: ${id})`
+});
         res.json({
             success:true,
             apiKey:newKey
@@ -118,7 +139,13 @@ exports.deleteKey = (req,res)=>{
         if(err){
             return res.status(500).json({success:false});
         }
-
+logActivity({
+    user_id: userId,
+    email: req.user.email,
+    ip: req.ip,
+    event: "API_KEY_DELETE",
+    message: `API key deleted (ID: ${id})`
+});
         res.json({
             success:true,
             message:"API key deleted"
@@ -144,7 +171,13 @@ exports.scanUrl = (req, res) => {
             message: "API key required"
         });
     }
-
+logActivity({
+    user_id: null, // or fetch from DB if needed
+    email: null,
+    ip: req.ip,
+    event: "API_KEY_CONSUME",
+    message: `API used for URL scan (${url})`
+});
     if (!url) {
         return res.status(400).json({
             success: false,
@@ -209,6 +242,13 @@ exports.setCreditLimit = (req, res) => {
                 message: "Database error"
             });
         }
+        logActivity({
+    user_id: userId,
+    email: req.user.email,
+    ip: req.ip,
+    event: "API_KEY_SET_CREDIT",
+    message: `Credit set to ${credit} (ID: ${id})`
+});
 
         res.json({
             success: true,
