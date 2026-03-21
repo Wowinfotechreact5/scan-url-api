@@ -21,6 +21,10 @@ const getClientIp = (req) => {
         ""
     );
 };
+
+const logActivity = (data) => {
+    activityModel.addActivityLog(data, () => {});
+};
 exports.register = async (req, res) => {
 
     try {
@@ -220,9 +224,7 @@ exports.verifyEmail = (req, res) => {
 };
 
 exports.changePassword = async (req, res) => {
-
     try {
-
         const { email, currentPassword, newPassword } = req.body;
 
         if (!email || !currentPassword || !newPassword) {
@@ -241,24 +243,43 @@ exports.changePassword = async (req, res) => {
                 });
             }
 
-           const user = result[0][0];
+            const user = result[0][0];
 
-if (!user || user.status === 0) {
-    return res.status(404).json({
-        success: false,
-        message: "User not found"
-    });
-}
+            // ❌ USER NOT FOUND
+            if (!user || user.status === 0) {
+
+                logActivity({
+                    user_id: null,
+                    email,
+                    ip: req.ip,
+                    event: "AUTH_CHANGE_PASSWORD_FAILED",
+                    message: "User not found"
+                });
+
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
 
             const match = await bcrypt.compare(currentPassword, user.password);
 
-            
+            // ❌ WRONG PASSWORD
             if (!match) {
-    return res.status(400).json({
-        success: false,
-        message: "Current password incorrect"
-    });
-}
+
+                logActivity({
+                    user_id: user.id,
+                    email,
+                    ip: req.ip,
+                    event: "AUTH_CHANGE_PASSWORD_FAILED",
+                    message: "Current password incorrect"
+                });
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Current password incorrect"
+                });
+            }
 
             const hashedPassword = await bcrypt.hash(newPassword, 10);
 
@@ -271,6 +292,15 @@ if (!user || user.status === 0) {
                     });
                 }
 
+                // ✅ SUCCESS
+                logActivity({
+                    user_id: user.id,
+                    email,
+                    ip: req.ip,
+                    event: "AUTH_CHANGE_PASSWORD",
+                    message: "Password changed successfully"
+                });
+
                 res.status(200).json({
                     success: true,
                     message: "Password updated successfully"
@@ -281,14 +311,11 @@ if (!user || user.status === 0) {
         });
 
     } catch (error) {
-
         res.status(500).json({
             success: false,
             message: error.message
         });
-
     }
-
 };
 
 
@@ -334,6 +361,7 @@ exports.deleteAccount = (req, res) => {
     }
 
 };
+
 exports.changeEmail = async (req, res) => {
 
     try {
@@ -371,12 +399,24 @@ exports.changeEmail = async (req, res) => {
 
             // ✅ send verification mail to new email
             await emailService.sendVerificationEmail(newEmail, token);
-
+logActivity({
+    user_id: userId,
+    email: newEmail,
+    ip: req.ip,
+    event: "AUTH_CHANGE_EMAIL",
+    message: `Email change requested to ${newEmail}`
+});
             res.status(200).json({
                 success: true,
                 message: "Email changed. Please verify your new email."
             });
-
+logActivity({
+    user_id: userId,
+    email: newEmail,
+    ip: req.ip,
+    event: "AUTH_CHANGE_EMAIL",
+    message: `Email change requested to ${newEmail}`
+});
         });
 
     } catch (error) {
@@ -423,7 +463,13 @@ exports.forgotPassword = async (req, res) => {
                     message: "User not found"
                 });
             }
-
+logActivity({
+    user_id: null,
+    email,
+    ip: req.ip,
+    event: "AUTH_FORGOT_PASSWORD_FAILED",
+    message: "User not found"
+});
             const token = uuidv4();
 
             authModel.saveResetToken(email, token, async (err) => {
@@ -436,7 +482,13 @@ exports.forgotPassword = async (req, res) => {
                 }
 
                 await emailService.sendResetPasswordEmail(email, token);
-
+logActivity({
+    user_id: user.id,
+    email,
+    ip: req.ip,
+    event: "AUTH_FORGOT_PASSWORD",
+    message: "Password reset email sent"
+});
                 res.status(200).json({
                     success: true,
                     message: "Password reset email sent"
@@ -488,11 +540,25 @@ exports.resetPassword = async (req, res) => {
                     message: "Invalid or expired token"
                 });
             }
+            logActivity({
+    user_id: null,
+    email: null,
+    ip: req.ip,
+    event: "AUTH_RESET_PASSWORD_FAILED",
+    message: "Invalid or expired token"
+});
 
             res.status(200).json({
                 success: true,
                 message: "Password reset successful"
             });
+            logActivity({
+    user_id: null, // optional: you can fetch via token
+    email: null,
+    ip: req.ip,
+    event: "AUTH_RESET_PASSWORD",
+    message: "Password reset successful"
+});
 
         });
 
@@ -507,3 +573,147 @@ exports.resetPassword = async (req, res) => {
 
 };
 
+
+
+
+
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email required"
+            });
+        }
+
+        authModel.getUserByEmail(email, async (err, result) => {
+
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: "Database error"
+                });
+            }
+
+            const user = result[0][0];
+
+            // ❌ USER NOT FOUND
+            if (!user || user.status === 0) {
+
+                logActivity({
+                    user_id: null,
+                    email,
+                    ip: req.ip,
+                    event: "AUTH_FORGOT_PASSWORD_FAILED",
+                    message: "User not found"
+                });
+
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            const token = uuidv4();
+
+            authModel.saveResetToken(email, token, async (err) => {
+
+                if (err) {
+                    return res.status(500).json({
+                        success: false,
+                        message: "Database error"
+                    });
+                }
+
+                await emailService.sendResetPasswordEmail(email, token);
+
+                // ✅ SUCCESS LOG
+                logActivity({
+                    user_id: user.id,
+                    email,
+                    ip: req.ip,
+                    event: "AUTH_FORGOT_PASSWORD",
+                    message: "Password reset email sent"
+                });
+
+                res.status(200).json({
+                    success: true,
+                    message: "Password reset email sent"
+                });
+
+            });
+
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Token and password required"
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        authModel.resetPassword(token, hashedPassword, (err, result) => {
+
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: "Database error"
+                });
+            }
+
+            // ❌ INVALID TOKEN
+            if (result.affectedRows === 0) {
+
+                logActivity({
+                    user_id: null,
+                    email: null,
+                    ip: req.ip,
+                    event: "AUTH_RESET_PASSWORD_FAILED",
+                    message: "Invalid or expired token"
+                });
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid or expired token"
+                });
+            }
+
+            // ✅ SUCCESS
+            logActivity({
+                user_id: null,
+                email: null,
+                ip: req.ip,
+                event: "AUTH_RESET_PASSWORD",
+                message: "Password reset successful"
+            });
+
+            res.status(200).json({
+                success: true,
+                message: "Password reset successful"
+            });
+
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
