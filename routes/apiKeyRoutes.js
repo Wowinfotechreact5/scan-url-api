@@ -11,4 +11,5 @@ router.put("/regenerate", verifyToken, apiKeyController.regenerateKey);
 router.delete("/delete", verifyToken, apiKeyController.deleteKey);
 router.put("/set-credit", verifyToken, apiKeyController.setCreditLimit);
 router.post("/v1/url-scan", apiKeyController.scanUrl);
+router.get("/limit",verifyToken,apiKeyController.getApiKeyLimit);
 module.exports = router;

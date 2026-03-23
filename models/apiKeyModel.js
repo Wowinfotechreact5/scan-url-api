@@ -67,3 +67,13 @@ exports.consumeCredit = (apiKey, callback) => {
         callback
     );
 };
+
+exports.getApiKeyLimit = (userId, callback) => {
+
+    db.query(
+        "CALL sp_get_api_key_limit(?)",
+        [userId],
+        callback
+    );
+
+};

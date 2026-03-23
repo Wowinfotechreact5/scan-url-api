@@ -88,3 +88,4 @@ exports.deleteIp = (req, res) => {
 
     });
 };
+
