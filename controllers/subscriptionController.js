@@ -6,15 +6,12 @@ const db = require("../db");
 
 exports.getPlans = (req, res) => {
 
-    console.log("GET PLANS CALLED");
-
+   
     db.query(
         "SELECT id,name,credits,price FROM tb_plans ORDER BY id",
         (err, result) => {
 
-            console.log("PLAN QUERY ERROR:", err);
-            console.log("PLAN QUERY RESULT:", result);
-
+          
             if (err) {
                 return res.status(500).json({
                     success:false,
@@ -41,8 +38,7 @@ exports.getUserPlan = (req, res) => {
 
     const userId = req.user.id;
 
-    console.log("GET USER PLAN USER:", userId);
-
+    
     db.query(
         `SELECT 
             u.id AS user_id,
@@ -56,9 +52,7 @@ exports.getUserPlan = (req, res) => {
         [userId],
         (err,result)=>{
 
-            console.log("USER PLAN ERROR:",err);
-            console.log("USER PLAN RESULT:",result);
-
+           
             if(err){
                 return res.status(500).json({
                     success:false
@@ -80,85 +74,68 @@ exports.getUserPlan = (req, res) => {
    UPGRADE PLAN
 ================================ */
 
-exports.upgradePlan = (req,res)=>{
+exports.upgradePlan = (req, res) => {
 
     const userId = req.user.id;
     const { planId } = req.body;
 
-    console.log("UPGRADE PLAN REQUEST:",{userId,planId});
-
-    if(!planId){
+    if (!planId) {
         return res.status(400).json({
-            success:false,
-            message:"planId required"
+            success: false,
+            message: "planId required"
         });
     }
 
-    // update user plan
+    // get credits of selected plan
     db.query(
-        "UPDATE tb_users SET plan_id=? WHERE id=?",
-        [planId,userId],
-        (err,result)=>{
+        "SELECT credits FROM tb_plans WHERE id=?",
+        [planId],
+        (err, planResult) => {
 
-            console.log("UPDATE PLAN ERROR:",err);
-            console.log("UPDATE PLAN RESULT:",result);
-
-            if(err){
+            if (err) {
                 return res.status(500).json({
-                    success:false
+                    success: false,
+                    message: "Database error"
                 });
             }
 
-            // get credits of new plan
+            if (!planResult.length) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid plan"
+                });
+            }
+
+            const credits = planResult[0].credits;
+
+            // update user plan + wallet
             db.query(
-                "SELECT credits FROM tb_plans WHERE id=?",
-                [planId],
-                (err2,plan)=>{
+                `UPDATE tb_users
+                 SET plan_id = ?, 
+                     credits_total = ?, 
+                     credits_used = 0
+                 WHERE id = ?`,
+                [planId, credits, userId],
+                (err, result) => {
 
-                    console.log("PLAN CREDIT ERROR:",err2);
-                    console.log("PLAN CREDIT RESULT:",plan);
-
-                    if(err2){
+                    if (err) {
                         return res.status(500).json({
-                            success:false
+                            success: false,
+                            message: "Failed to upgrade plan"
                         });
                     }
 
-                    const credits = plan[0].credits;
-
-                    console.log("NEW PLAN CREDITS:",credits);
-
-                    // update all api keys credits
-                    db.query(
-                        `UPDATE tb_api_keys 
-                         SET credit_limit = ? 
-                         WHERE user_id = ?`,
-                        [credits,userId],
-                        (err3,result3)=>{
-
-                            console.log("API KEY CREDIT UPDATE:",result3);
-
-                            if(err3){
-                                return res.status(500).json({
-                                    success:false
-                                });
-                            }
-
-                            res.json({
-                                success:true,
-                                message:"Plan upgraded successfully",
-                                newCredits:credits
-                            });
-
-                        }
-                    );
+                    res.json({
+                        success: true,
+                        message: "Plan upgraded successfully",
+                        plan_id: planId,
+                        credits_total: credits
+                    });
 
                 }
-
             );
 
         }
-
     );
 
 };

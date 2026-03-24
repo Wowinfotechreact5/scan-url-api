@@ -1,14 +1,11 @@
 const db = require("../db");
 
 exports.createApiKey = (userId, name, apiKey, callback) => {
-    console.log("MODEL createApiKey:", { userId, name, apiKey });
-
+   
     db.query(
         "CALL sp_create_api_key(?,?,?)",
         [userId, name, apiKey],
         (err, result) => {
-            console.log("MODEL createApiKey ERROR:", err);
-            console.log("MODEL createApiKey RESULT:", JSON.stringify(result, null, 2));
             callback(err, result);
         }
     );
@@ -47,14 +44,11 @@ exports.deleteKey = (userId, id, callback) => {
 };
 
 exports.setCreditLimit = (userId, id, credit, callback) => {
-    console.log("MODEL setCreditLimit:", { userId, id, credit });
-
+    
     db.query(
         "CALL sp_set_credit_limit(?,?,?)",
         [userId, id, credit],
         (err, result) => {
-            console.log("MODEL setCreditLimit ERROR:", err);
-            console.log("MODEL setCreditLimit RESULT:", JSON.stringify(result, null, 2));
             callback(err, result);
         }
     );

@@ -69,7 +69,6 @@ exports.register = async (req, res) => {
 
            
   const verifyLink = `${process.env.BASE_URL}/api/auth/verify-email?token=${token}`;
-console.log("Verification Link:", verifyLink);
 
 // send email
 await emailService.sendVerificationEmail(email, token);
