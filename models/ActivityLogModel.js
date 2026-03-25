@@ -31,26 +31,49 @@ const getActivityLogs = (filters, callback) => {
 
     const params = [];
 
-    if (filters.type === "auth") {
-        query += ` AND (
-            event LIKE 'AUTH_%'
-            OR event LIKE 'LOGIN_%'
-        )`;
-    }
+    /* ===============================
+       AUTH SECTION
+    ================================*/
 
-    if (filters.type === "credit") {
-        query += ` AND (
-            event LIKE 'API_KEY_%'
-            OR event LIKE 'CREDIT_%'
-            OR event LIKE 'WALLET_%'
-        )`;
-    }
-    if (filters.type === "credit") {
-    query += ` AND (
-        event LIKE 'API_KEY_%'
-        OR event LIKE 'CREDIT_%'
-        OR event LIKE 'PLAN_%'
-        OR event LIKE 'WALLET_%'
+ if (filters.type === "auth") {
+    query += ` AND event IN (
+        'LOGIN_SUCCESS',
+        'LOGIN_FAILED',
+        'AUTH_CHANGE_PASSWORD',
+        'AUTH_CHANGE_PASSWORD_FAILED',
+        'AUTH_CHANGE_EMAIL',
+        'AUTH_FORGOT_PASSWORD',
+        'AUTH_FORGOT_PASSWORD_FAILED',
+        'API_KEY_CREATE',
+        'API_KEY_UPDATE',
+        'API_KEY_REGENERATE',
+        'API_KEY_DELETE',
+        'API_KEY_SET_CREDIT',
+        'API_KEY_IP_ADD',
+        'API_KEY_IP_DELETE'
+    )`;
+}
+
+/* ===============================
+   SUBSCRIPTION SECTION
+================================*/
+
+if (filters.type === "subscription") {
+    query += ` AND event IN (
+        'PLAN_UPGRADE'
+    )`;
+}
+
+/* ===============================
+   API USAGE SECTION
+================================*/
+
+if (filters.type === "api") {
+    query += ` AND event IN (
+        'API_KEY_CONSUME',
+        'CREDIT_CONSUMED',
+        'API_REQUEST',
+        'CREDIT_LIMIT_EXCEEDED'
     )`;
 }
 
@@ -69,7 +92,6 @@ const getActivityLogs = (filters, callback) => {
         params.push(filters.endDate);
     }
 
-    // show all logs
     query += ` ORDER BY id DESC`;
 
     db.query(query, params, callback);
