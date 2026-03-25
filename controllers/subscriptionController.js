@@ -1,5 +1,5 @@
 const db = require("../db");
-
+const { logActivity } = require("../utils/activityLogger");
 /* ===============================
    GET ALL PLANS
 ================================ */
@@ -125,12 +125,20 @@ exports.upgradePlan = (req, res) => {
                         });
                     }
 
-                    res.json({
-                        success: true,
-                        message: "Plan upgraded successfully",
-                        plan_id: planId,
-                        credits_total: credits
-                    });
+                    logActivity({
+    user_id: userId,
+    email: req.user.email,
+    ip: req.ip,
+    event: "PLAN_UPGRADE",
+    message: `User upgraded to plan ${planId} with ${credits} credits`
+});
+
+res.json({
+    success: true,
+    message: "Plan upgraded successfully",
+    plan_id: planId,
+    credits_total: credits
+});
 
                 }
             );

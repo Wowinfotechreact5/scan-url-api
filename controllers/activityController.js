@@ -1,10 +1,11 @@
 const activityModel = require("../models/ActivityLogModel");
 
 exports.getActivityLogs = (req, res) => {
+
     const {
         page = 1,
         limit = 10,
-        event,
+        type, // 👈 auth OR credit
         email,
         startDate,
         endDate
@@ -16,12 +17,13 @@ exports.getActivityLogs = (req, res) => {
         {
             limit: Number(limit),
             offset: Number(offset),
-            event,
+            type,
             email,
             startDate,
             endDate
         },
         (err, result) => {
+
             if (err) {
                 console.error(err);
                 return res.status(500).json({
@@ -32,12 +34,14 @@ exports.getActivityLogs = (req, res) => {
 
             res.status(200).json({
                 success: true,
-                data: result[0],
+                data: result,
                 pagination: {
                     page: Number(page),
                     limit: Number(limit)
                 }
             });
+
         }
     );
+
 };

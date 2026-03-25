@@ -170,7 +170,6 @@ const fakeScan = async (url) => {
         score: Math.floor(Math.random() * 100)
     };
 };
-
 exports.scanUrl = (req, res) => {
 
     const apiKey = req.headers["x-api-key"];
@@ -183,75 +182,49 @@ exports.scanUrl = (req, res) => {
         });
     }
 
-    const cacheCount = creditCache.increment(apiKey);
+    if (!url) {
+        return res.status(400).json({
+            success:false,
+            message:"URL required"
+        });
+    }
 
-    // 🔹 first check remaining credits
-    apiKeyModel.getKeyCredits(apiKey,(err,result)=>{
+    // consume 1 credit per API call
+    apiKeyModel.consumeCredit(apiKey,1,(err,result)=>{
 
         if(err){
-            return res.status(500).json({success:false});
+            return res.status(500).json({
+                success:false
+            });
         }
 
-       const data = result[0];
+        const response = result[0][0];
 
-if (!data) {
-    return res.status(403).json({
-        success: false,
-        message: "Invalid API key"
-    });
-        }
-        
-        if (!result || result.length === 0) {
-    return res.status(403).json({
-        success:false,
-        message:"Invalid API key"
-    });
-}
-
-const remaining = data.credit_limit - data.used_credits;
-        // block if cache exceeds remaining credits
-        if(cacheCount > remaining){
+        if(response.status === 0){
             return res.status(403).json({
                 success:false,
-                message:"API credit limit reached"
+                message:response.message
             });
         }
 
-        // every 10 hits commit to DB
-        if(cacheCount % 10 === 0){
-
-            apiKeyModel.consumeCredit(apiKey,10,(err,result)=>{
-
-                if(err){
-                    return res.status(500).json({success:false});
-                }
-
-                const response = result[0][0];
-
-                if(response.status === 0){
-                    return res.status(403).json({
-                        success:false,
-                        message:response.message
-                    });
-                }
-
-                creditCache.reset(apiKey);
-
-                processScan();
-
-            });
-
-        }else{
-            processScan();
-        }
+        processScan();
 
     });
+
 
     async function processScan(){
 
         try{
 
             const scanResult = await fakeScan(url);
+
+            logActivity({
+                user_id:null,
+                email:null,
+                ip:req.ip,
+                event:"CREDIT_CONSUMED",
+                message:"1 API credit consumed for URL scan"
+            });
 
             return res.json({
                 success:true,
