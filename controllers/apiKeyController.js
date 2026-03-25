@@ -176,6 +176,7 @@ exports.scanUrl = (req, res) => {
     const { url } = req.body;
 
     if (!apiKey) {
+        console.log("ERROR: API key missing");
         return res.status(401).json({
             success:false,
             message:"API key required"
@@ -183,16 +184,23 @@ exports.scanUrl = (req, res) => {
     }
 
     if (!url) {
+        console.log("ERROR: URL missing");
         return res.status(400).json({
             success:false,
             message:"URL required"
         });
     }
 
+    console.log("Calling consumeCredit...");
+
     // consume 1 credit per API call
     apiKeyModel.consumeCredit(apiKey,1,(err,result)=>{
 
+        console.log("consumeCredit RESULT:", result);
+        console.log("consumeCredit ERROR:", err);
+
         if(err){
+            console.log("ERROR: consumeCredit failed");
             return res.status(500).json({
                 success:false
             });
@@ -200,47 +208,92 @@ exports.scanUrl = (req, res) => {
 
         const response = result[0][0];
 
+        console.log("consumeCredit RESPONSE:", response);
+
         if(response.status === 0){
+            console.log("ERROR: Credit limit exceeded or invalid key");
             return res.status(403).json({
                 success:false,
                 message:response.message
             });
         }
 
+        console.log("Credit consumed successfully. Starting scan...");
+
         processScan();
 
     });
 
 
-    async function processScan(){
+   async function processScan() {
 
-        try{
+    try{
 
-            const scanResult = await fakeScan(url);
+        console.log("Running fakeScan...");
 
-            logActivity({
-                user_id:null,
-                email:null,
-                ip:req.ip,
-                event:"CREDIT_CONSUMED",
-                message:"1 API credit consumed for URL scan"
-            });
+        const scanResult = await fakeScan(url);
 
-            return res.json({
-                success:true,
-                data:scanResult
-            });
+        console.log("Scan Result:", scanResult);
 
-        }catch(error){
+        logActivity({
+            user_id:null,
+            email:null,
+            ip:req.ip,
+            event:"CREDIT_CONSUMED",
+            message:"1 API credit consumed for URL scan"
+        });
 
-            return res.status(500).json({
-                success:false,
-                message:"Scan failed"
-            });
+        console.log("Saving API usage log...");
 
-        }
+        db.query(
+`INSERT INTO tb_api_usage_logs
+(api_key_id, endpoint, request_url, response_data, event, ip_address)
+VALUES (?, ?, ?, ?, ?, ?)`,
+[
+apiKey,
+"/api/apikey/v1/url-scan",
+url,
+JSON.stringify(scanResult),
+"API_REQUEST",
+req.ip
+],
+(err,result)=>{
+
+    if(err){
+        console.log("API LOG ERROR:",err);
+    }else{
+        const apiUsageId = result.insertId;
+
+        console.log("API USAGE ID:", apiUsageId);
+
+        logActivity({
+            user_id:null,
+            email:null,
+            ip:req.ip,
+            event:"CREDIT_CONSUMED",
+            message:`1 API credit consumed for URL scan | usage_id:${apiUsageId}`
+        });
+    }
+
+});
+
+        return res.json({
+            success:true,
+            data:scanResult
+        });
+
+    }catch(error){
+
+        console.log("SCAN ERROR:", error);
+
+        return res.status(500).json({
+            success:false,
+            message:"Scan failed"
+        });
 
     }
+
+}
 
 };
 exports.setCreditLimit = (req, res) => {

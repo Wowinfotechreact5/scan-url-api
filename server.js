@@ -9,6 +9,7 @@ const apiKeyIpRoutes = require("./routes/apiKeyIpRoutes");
 const activityRoutes = require("./routes/activityRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const walletsRoutes = require("./routes/walletRoutes");
+const apiUsageLogsRoutes = require("./routes/ApiUsageLogRoutes");
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use("/api", activityRoutes);
 
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/wallet", walletsRoutes);
+app.use("/api", apiUsageLogsRoutes);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
