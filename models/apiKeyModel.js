@@ -53,21 +53,34 @@ exports.setCreditLimit = (userId, id, credit, callback) => {
         }
     );
 };
+exports.consumeCredit = (apiKey, hits, callback) => {
 
-exports.consumeCredit = (apiKey, callback) => {
     db.query(
-        "CALL sp_consume_credit(?)",
-        [apiKey],
+        "CALL sp_consume_credit(?,?)",
+        [apiKey, hits],
         callback
     );
-};
 
+};
 exports.getApiKeyLimit = (userId, callback) => {
 
     db.query(
         "CALL sp_get_api_key_limit(?)",
         [userId],
         callback
+    );
+
+};
+
+exports.getKeyCredits = (apiKey, callback) => {
+
+    db.query(
+        "SELECT credit_limit, used_credits FROM tb_api_keys WHERE api_key = ?",
+        [apiKey],
+        (err, result) => {
+            if (err) return callback(err);
+            callback(null, result);
+        }
     );
 
 };

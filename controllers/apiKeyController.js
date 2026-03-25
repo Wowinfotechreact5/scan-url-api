@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const activityModel = require("../models/ActivityLogModel");
 const { logActivity } = require("../utils/activityLogger");
 const db = require("../db");
-
+const creditCache = require("../utils/creditCache");
 const generateApiKey = () => {
     return crypto.randomBytes(16).toString("hex");
 };
@@ -172,59 +172,103 @@ const fakeScan = async (url) => {
 };
 
 exports.scanUrl = (req, res) => {
+
     const apiKey = req.headers["x-api-key"];
     const { url } = req.body;
 
     if (!apiKey) {
         return res.status(401).json({
-            success: false,
-            message: "API key required"
+            success:false,
+            message:"API key required"
         });
     }
 
-    logActivity({
-        user_id: null,
-        email: null,
-        ip: req.ip,
-        event: "API_KEY_CONSUME",
-        message: `API used for URL scan (${url})`
-    });
+    const cacheCount = creditCache.increment(apiKey);
 
-    if (!url) {
-        return res.status(400).json({
-            success: false,
-            message: "URL required"
-        });
-    }
+    // 🔹 first check remaining credits
+    apiKeyModel.getKeyCredits(apiKey,(err,result)=>{
 
-    apiKeyModel.consumeCredit(apiKey, async (err, result) => {
-        if (err) {
-            return res.status(500).json({ success: false });
+        if(err){
+            return res.status(500).json({success:false});
         }
 
-        const response = result[0][0];
+       const data = result[0];
 
-        if (response.status === 0) {
+if (!data) {
+    return res.status(403).json({
+        success: false,
+        message: "Invalid API key"
+    });
+        }
+        
+        if (!result || result.length === 0) {
+    return res.status(403).json({
+        success:false,
+        message:"Invalid API key"
+    });
+}
+
+const remaining = data.credit_limit - data.used_credits;
+        // block if cache exceeds remaining credits
+        if(cacheCount > remaining){
             return res.status(403).json({
-                success: false,
-                message: response.message
+                success:false,
+                message:"API credit limit reached"
             });
         }
 
-        try {
+        // every 10 hits commit to DB
+        if(cacheCount % 10 === 0){
+
+            apiKeyModel.consumeCredit(apiKey,10,(err,result)=>{
+
+                if(err){
+                    return res.status(500).json({success:false});
+                }
+
+                const response = result[0][0];
+
+                if(response.status === 0){
+                    return res.status(403).json({
+                        success:false,
+                        message:response.message
+                    });
+                }
+
+                creditCache.reset(apiKey);
+
+                processScan();
+
+            });
+
+        }else{
+            processScan();
+        }
+
+    });
+
+    async function processScan(){
+
+        try{
+
             const scanResult = await fakeScan(url);
 
             return res.json({
-                success: true,
-                data: scanResult
+                success:true,
+                data:scanResult
             });
-        } catch (error) {
+
+        }catch(error){
+
             return res.status(500).json({
-                success: false,
-                message: "Scan failed"
+                success:false,
+                message:"Scan failed"
             });
+
         }
-    });
+
+    }
+
 };
 exports.setCreditLimit = (req, res) => {
 
