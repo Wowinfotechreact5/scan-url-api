@@ -5,10 +5,12 @@ exports.getActivityLogs = (req, res) => {
     const {
         page = 1,
         limit = 10,
-        type, // 👈 auth OR credit
+        type,
         email,
         startDate,
-        endDate
+        endDate,
+        search,
+        event
     } = req.body;
 
     const offset = (page - 1) * limit;
@@ -20,12 +22,12 @@ exports.getActivityLogs = (req, res) => {
             type,
             email,
             startDate,
-            endDate
+            endDate,
+            search,
+            event
         },
         (err, result) => {
-
             if (err) {
-                console.error(err);
                 return res.status(500).json({
                     success: false,
                     message: "Database error"
@@ -34,14 +36,8 @@ exports.getActivityLogs = (req, res) => {
 
             res.status(200).json({
                 success: true,
-                data: result,
-                pagination: {
-                    page: Number(page),
-                    limit: Number(limit)
-                }
+                data: result
             });
-
         }
     );
-
 };
