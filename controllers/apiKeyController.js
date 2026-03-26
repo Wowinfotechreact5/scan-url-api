@@ -4,9 +4,29 @@ const activityModel = require("../models/ActivityLogModel");
 const { logActivity } = require("../utils/activityLogger");
 const db = require("../db");
 const creditCache = require("../utils/creditCache");
+const axios = require("axios");
 const generateApiKey = () => {
     return crypto.randomBytes(16).toString("hex");
 };
+
+const runDeepScan = async (url) => {
+
+    const response = await axios.post(
+        "https://mlscanurlapi.uat.scanurl.ai/deep-scan",
+        {
+            url: url
+        },
+        {
+            headers: {
+                "Content-Type": "application/json"
+            },
+            timeout: 60000
+        }
+    );
+
+    return response.data;
+};
+
 
 exports.createApiKey = (req, res) => {
     const userId = req.user.id;
@@ -163,13 +183,6 @@ exports.deleteKey = (req, res) => {
     });
 };
 
-const fakeScan = async (url) => {
-    return {
-        url,
-        safe: true,
-        score: Math.floor(Math.random() * 100)
-    };
-};
 exports.scanUrl = (req, res) => {
 
     const apiKey = req.headers["x-api-key"];
@@ -230,8 +243,8 @@ exports.scanUrl = (req, res) => {
     try{
 
         console.log("Running fakeScan...");
-
-        const scanResult = await fakeScan(url);
+       
+       const scanResult = await runDeepScan(url);
 
         console.log("Scan Result:", scanResult);
 
