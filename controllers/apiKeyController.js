@@ -258,35 +258,46 @@ exports.scanUrl = (req, res) => {
 
         console.log("Saving API usage log...");
 
-        db.query(
-`INSERT INTO tb_api_usage_logs
-(api_key_id, endpoint, request_url, response_data, event, ip_address)
-VALUES (?, ?, ?, ?, ?, ?)`,
-[
-apiKey,
-"/api/apikey/v1/url-scan",
-url,
-JSON.stringify(scanResult),
-"API_REQUEST",
-req.ip
-],
-(err,result)=>{
+   db.query(
+"SELECT id, user_id, api_key_name FROM tb_api_keys WHERE api_key = ?",
+[apiKey],
+(err,keyResult)=>{
 
     if(err){
-        console.log("API LOG ERROR:",err);
-    }else{
-        const apiUsageId = result.insertId;
-
-        console.log("API USAGE ID:", apiUsageId);
-
-        logActivity({
-            user_id:null,
-            email:null,
-            ip:req.ip,
-            event:"CREDIT_CONSUMED",
-            message:`1 API credit consumed for URL scan | usage_id:${apiUsageId}`
-        });
+        console.log("API KEY LOOKUP ERROR:",err);
+        return;
     }
+
+    if(!keyResult.length){
+        console.log("API KEY NOT FOUND");
+        return;
+    }
+
+    const keyData = keyResult[0];
+
+    db.query(
+    `INSERT INTO tb_api_usage_logs
+    (api_key_id, api_key_name, user_id, endpoint, request_url, response_data, event, ip_address)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+        keyData.id,
+        keyData.api_key_name,
+        keyData.user_id,
+        "/api/apikey/v1/url-scan",
+        url,
+        JSON.stringify(scanResult),
+        "API_REQUEST",
+        req.ip
+    ],
+    (err,result)=>{
+
+        if(err){
+            console.log("API LOG ERROR:",err);
+        }else{
+            console.log("API USAGE LOG SAVED:",result.insertId);
+        }
+
+    });
 
 });
 
