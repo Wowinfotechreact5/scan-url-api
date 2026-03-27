@@ -258,7 +258,7 @@ exports.scanUrl = (req, res) => {
 
         console.log("Saving API usage log...");
 
-   db.query(
+  db.query(
 "SELECT id, user_id, api_key_name FROM tb_api_keys WHERE api_key = ?",
 [apiKey],
 (err,keyResult)=>{
@@ -293,9 +293,21 @@ exports.scanUrl = (req, res) => {
 
         if(err){
             console.log("API LOG ERROR:",err);
-        }else{
-            console.log("API USAGE LOG SAVED:",result.insertId);
+            return;
         }
+
+        const usageId = result.insertId;
+
+        console.log("API USAGE LOG SAVED:", usageId);
+
+        // ✅ IMPORTANT: attach usage_id here
+        logActivity({
+            user_id: keyData.user_id,
+            email: null,
+            ip: req.ip,
+            event: "API_REQUEST",
+            message: `API request completed | usage_id:${usageId}`
+        });
 
     });
 

@@ -40,7 +40,6 @@ exports.register = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // ✅ generate verification token
         const token = uuidv4();
 
         authModel.registerUser(
@@ -67,23 +66,20 @@ exports.register = async (req, res) => {
                     });
                 }
 
-           
-  const verifyLink = `${process.env.BASE_URL}/api/auth/verify-email?token=${token}`;
+                // send email
+                await emailService.sendVerificationEmail(email, token);
 
-// send email
-await emailService.sendVerificationEmail(email, token);
-
-res.status(201).json({
-    success: true,
-    message: "Registration successful. Verification email sent."
-});
+                return res.status(201).json({
+                    success: true,
+                    message: "Registration successful. Verification email sent."
+                });
 
             }
         );
 
     } catch (error) {
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });
